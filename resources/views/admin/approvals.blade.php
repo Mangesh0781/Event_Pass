@@ -28,20 +28,22 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                 <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
                     <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Pending Requests</p>
-                    <p class="text-3xl font-black text-gray-900 mt-1">{{ $pendingOrganizers->count() }}</p>
+                    <p class="text-3xl font-black text-gray-900 mt-1">
+                        {{ $allOrganizers->where('is_approved', false)->count() }}
+                    </p>
                 </div>
                 <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
                     <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">System Status</p>
                     <p class="text-3xl font-black text-green-500 mt-1">Active</p>
                 </div>
                 <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Security Level</p>
-                    <p class="text-3xl font-black text-blue-600 mt-1">Root</p>
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Organizers</p>
+                    <p class="text-3xl font-black text-blue-600 mt-1">{{ $allOrganizers->count() }}</p>
                 </div>
             </div>
 
             @if(session('success'))
-                <div class="mb-8 p-5 bg-gray-900 text-white rounded-[2rem] shadow-2xl flex items-center animate-in fade-in slide-in-from-top-4 duration-500">
+                <div class="mb-8 p-5 bg-gray-900 text-white rounded-[2rem] shadow-2xl flex items-center">
                     <div class="bg-blue-500 p-2 rounded-xl mr-4">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                     </div>
@@ -52,49 +54,54 @@
             <div class="bg-white p-2 rounded-[3.5rem] shadow-2xl border border-gray-100 overflow-hidden">
                 <div class="bg-gray-50/50 p-8 rounded-[3rem]">
                     <div class="space-y-4">
-                        @forelse($pendingOrganizers as $org)
+                        @forelse($allOrganizers as $org)
                             <div class="flex flex-col md:flex-row justify-between items-center p-8 bg-white rounded-[2.5rem] border border-gray-100 hover:border-blue-200 hover:shadow-xl transition-all duration-500 group">
                                 
                                 <div class="flex items-center mb-6 md:mb-0">
                                     <div class="relative">
-                                        <div class="w-16 h-16 bg-gradient-to-tr from-gray-900 to-blue-800 rounded-2xl flex items-center justify-center font-black text-white shadow-xl text-xl group-hover:rotate-6 transition-transform duration-500">
+                                        <div class="w-16 h-16 bg-gradient-to-tr from-gray-900 to-blue-800 rounded-2xl flex items-center justify-center font-black text-white shadow-xl text-xl">
                                             {{ substr($org->name, 0, 1) }}
                                         </div>
-                                        <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-orange-500 border-4 border-white rounded-full"></div>
+                                        <div class="absolute -bottom-1 -right-1 w-5 h-5 border-4 border-white rounded-full {{ $org->is_approved ? 'bg-green-500' : 'bg-orange-500 animate-pulse' }}"></div>
                                     </div>
                                     <div class="ml-6">
-                                        <p class="font-black text-gray-900 text-xl tracking-tight leading-none group-hover:text-blue-600 transition-colors">{{ $org->name }}</p>
-                                        <p class="text-xs text-gray-400 font-bold tracking-tighter mt-1">{{ $org->email }}</p>
-                                        <div class="flex items-center mt-3 space-x-3">
-                                            <span class="px-3 py-1 bg-gray-100 rounded-full text-[8px] text-gray-500 font-black uppercase tracking-tighter italic">Applied {{ $org->created_at->diffForHumans() }}</span>
-                                            <span class="text-[9px] text-blue-500 font-black uppercase tracking-tighter">UID: #{{ $org->id }}</span>
+                                        <div class="flex items-center space-x-2">
+                                            <p class="font-black text-gray-900 text-xl tracking-tight leading-none">{{ $org->name }}</p>
+                                            @if($org->is_approved)
+                                                <span class="text-[8px] bg-green-100 text-green-600 px-2 py-0.5 rounded-md font-black uppercase tracking-widest">Verified</span>
+                                            @else
+                                                <span class="text-[8px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md font-black uppercase tracking-widest">Awaiting Approval</span>
+                                            @endif
                                         </div>
+                                        <p class="text-xs text-gray-400 font-bold tracking-tighter mt-1">{{ $org->email }}</p>
                                     </div>
                                 </div>
                                 
                                 <div class="flex items-center space-x-3 w-full md:w-auto">
-                                    <form action="{{ route('admin.reject', $org->id) }}" method="POST" class="flex-grow md:flex-grow-0" onsubmit="return confirm('Permanently revoke this application?')">
+                                    <form action="{{ route('admin.reject', $org->id) }}" method="POST" onsubmit="return confirm('Permanently remove this user?')">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="w-full bg-white text-gray-400 border border-gray-100 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all active:scale-95">
-                                            Reject
+                                        <button type="submit" class="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:text-red-500 hover:bg-red-50 transition-all">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </form>
 
-                                    <form action="{{ route('admin.approve', $org->id) }}" method="POST" class="flex-grow md:flex-grow-0">
+                                    <form action="{{ route('admin.approve', $org->id) }}" method="POST">
                                         @csrf
-                                        <button type="submit" class="w-full bg-gray-900 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl hover:shadow-blue-200 active:scale-95">
-                                            Authorize
-                                        </button>
+                                        @if($org->is_approved)
+                                            <button type="submit" class="w-full md:w-40 bg-white border border-gray-200 text-gray-900 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-900 hover:text-white transition-all shadow-sm">
+                                                Revoke Access
+                                            </button>
+                                        @else
+                                            <button type="submit" class="w-full md:w-40 bg-gray-900 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl">
+                                                Authorize
+                                            </button>
+                                        @endif
                                     </form>
                                 </div>
                             </div>
                         @empty
-                            <div class="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
-                                <div class="inline-flex items-center justify-center w-24 h-24 bg-blue-50 text-blue-500 rounded-full mb-6 shadow-inner animate-pulse">
-                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                </div>
-                                <h4 class="text-gray-900 font-black text-xl uppercase tracking-widest">No Pending Clearances</h4>
-                                <p class="text-gray-400 text-xs font-bold mt-2 uppercase tracking-tighter italic px-10">The authorization queue is currently empty. All registered organizers have been processed.</p>
+                            <div class="text-center py-20">
+                                <p class="text-gray-400 text-xs font-black uppercase tracking-[0.3em]">No registered organizers found.</p>
                             </div>
                         @endforelse
                     </div>
