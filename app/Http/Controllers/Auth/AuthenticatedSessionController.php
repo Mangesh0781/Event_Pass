@@ -22,14 +22,23 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
-    {
-        $request->authenticate();
+   public function store(LoginRequest $request): RedirectResponse
+{
+    $request->authenticate();
 
-        $request->session()->regenerate();
+    $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+    $user = Auth::user();
+
+    // The Logic: If Organizer is NOT approved and NOT the Super Admin
+    if ($user->role === 'organizer' && !$user->is_approved && !$user->isSuperAdmin()) {
+        Auth::logout(); // Kick them out!
+
+        return redirect()->route('login')->with('popup_error', 'Access Pending: Mangesh (Admin) has not approved your organizer account yet. Please wait for verification.');
     }
+
+    return redirect()->intended(route('dashboard', absolute: false));
+}
 
     /**
      * Destroy an authenticated session.

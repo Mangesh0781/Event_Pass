@@ -2,6 +2,18 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
+    @if (session('popup_error'))
+        <div class="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-2xl flex items-start animate-bounce">
+            <div class="bg-red-500 text-white p-1 rounded-full mr-3 mt-0.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+            </div>
+            <div>
+                <h4 class="text-red-800 font-black text-xs uppercase tracking-widest">Access Blocked</h4>
+                <p class="text-red-600 text-[11px] font-bold mt-1">{{ session('popup_error') }}</p>
+            </div>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('login') }}">
         @csrf
 

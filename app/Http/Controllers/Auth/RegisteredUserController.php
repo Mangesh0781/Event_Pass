@@ -34,17 +34,25 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => ['required', 'string', 'in:customer,organizer'],
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => $request->role,
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
+
+        // If they chose organizer, don't log them in automatically
+        if ($user->role === 'organizer' && !$user->isSuperAdmin()) {
+            Auth::logout();
+            return redirect()->route('login')->with('success', 'Registration successful! Please wait for Mangesh to approve your organizer account.');
+        }
 
         return redirect(route('dashboard', absolute: false));
     }

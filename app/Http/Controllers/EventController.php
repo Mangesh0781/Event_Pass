@@ -37,31 +37,61 @@ class EventController extends Controller
         return redirect()->route('dashboard')->with('success', 'Event created successfully!');
     }
     public function index()
-{
-    // Fetch all events from the database
-    $events = Event::latest()->get();
-    
-    // Return the dashboard view with the events data
-    return view('dashboard', compact('events'));
-}
-// Add this inside your EventController class
-public function rsvp(Event $event) 
-{
-    // Check if seats are available
-    if ($event->booked_seats < $event->total_seats) {
-        
-        // Create the booking record
-        \App\Models\Booking::create([
-            'user_id' => auth()->id(),
-            'event_id' => $event->id,
-        ]);
+    {
+        $events = Event::latest()->get();
 
-        // Increase the booked count by 1
-        $event->increment('booked_seats');
+        // This fetches only the bookings made by the logged-in user
+        $myBookings = \App\Models\Booking::where('user_id', auth()->id())
+            ->with('event')
+            ->get();
 
-        return back()->with('success', 'Spot reserved successfully!');
+        return view('dashboard', compact('events', 'myBookings'));
+    }
+    // Add this inside your EventController class
+    public function rsvp(Event $event)
+    {
+        // 1. Check if user is already booked to prevent double-booking
+        $exists = \App\Models\Booking::where('user_id', auth()->id())
+            ->where('event_id', $event->id)
+            ->exists();
+
+        if ($exists) {
+            return back()->with('error', 'You have already joined this event!');
+        }
+
+        // 2. Check for empty seats
+        if ($event->booked_seats < $event->total_seats) {
+            \App\Models\Booking::create([
+                'user_id' => auth()->id(),
+                'event_id' => $event->id,
+            ]);
+
+            $event->increment('booked_seats');
+            return back()->with('success', 'Ticket Booked! See you there.');
+        }
+
+        return back()->with('error', 'Sorry, no seats left.');
     }
 
-    return back()->with('error', 'Sorry, this event is full.');
+    public function cancelBooking($id) {
+    $booking = \App\Models\Booking::findOrFail($id);
+    if ($booking->user_id == auth()->id()) {
+        $event = $booking->event;
+        $event->decrement('booked_seats');
+        $booking->delete();
+        return back()->with('success', 'Ticket successfully cancelled.');
+    }
+    return back()->with('error', 'Action failed.');
 }
+public function showCheckout(Event $event)
+{
+    // Make sure user hasn't already booked
+    $isBooked = \App\Models\Booking::where('user_id', auth()->id())->where('event_id', $event->id)->exists();
+    if($isBooked) return redirect()->route('dashboard');
+
+    return view('events.checkout', compact('event'));
+}
+
+// Your existing rsvp function stays the same, 
+// it just gets called by the button on the checkout page now!
 }

@@ -15,4 +15,14 @@ class Event extends Model
         'total_seats', 
         'booked_seats'
     ];
+
+    public function bookings()
+{
+    return $this->hasMany(Booking::class);
+}
+
+public function organizer()
+{
+    return $this->belongsTo(User::class, 'user_id');
+}
 }
